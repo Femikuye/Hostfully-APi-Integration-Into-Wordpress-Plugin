@@ -1,0 +1,19 @@
+{
+    "name": "user/es_property_listings",
+    "description": "This plugin will fetch properties from Hostfully and display to users",
+    "type": "project",
+    "license": "GPL",
+    "autoload": {
+        "psr-4": {
+            "User\\EsPropertyListings\\": "./inc"
+        }
+    },
+    "authors": [
+        {
+            "name": "Phemrise LLC",
+            "email": "contact@phemrise.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}

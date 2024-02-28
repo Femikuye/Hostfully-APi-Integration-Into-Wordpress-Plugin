@@ -1,0 +1,562 @@
+<style>
+    .qodef-widget-holder {
+        display: none !important;
+    }
+
+    #qodef-page-inner {
+        padding: 20px 0 20px !important;
+    }
+</style>
+<?php
+/*
+Template Name: Property Details Template
+*/
+
+use User\EsPropertyListings\Base\BaseController;
+use User\EsPropertyListings\Base\Controllers\HostfullyApiController;
+
+$base = new BaseController();
+$hostfully = new HostfullyApiController();
+?>
+
+<?php
+get_header();
+
+// echo "<h1>Hello There</h1>";
+// Retrieve the slug from the URL
+$slug = get_query_var($base->single_property_url_path);
+
+// Query for the property based on the slug
+// $property = get_page_by_path($slug, OBJECT, 'property_post_type');
+$property = $hostfully->getSinglePropert($slug);
+$images = null;
+$review_shortcode = null;
+$map_shortcode = null;
+$row = null;
+$indoor_ameninites = [];
+$outdoor_amenities = [];
+$extras_amenities = [];
+$family_amenities = [];
+if ($property) {
+    $row = $property[0];
+    $images = $hostfully->getPropertyImages($row->espl_property_uid, 50);
+    $air_bnb_shorcode_id = get_post_meta($row->ID, 'property_review_id', true);
+    $map_shorcode_id = get_post_meta($row->ID, 'property_map_id', true);
+    if ($air_bnb_shorcode_id) {
+        $review_shortcode = '[trustindex data-widget-id="' . $air_bnb_shorcode_id . '"]';
+    }
+    if ($map_shorcode_id) {
+        $map_shortcode = '[wpgmza id="' . $map_shorcode_id . '"]';
+    }
+    $amenities = $hostfully->getPropertyAmenities($row->espl_property_uid);
+    if ($amenities) {
+        foreach ($amenities as $amenity) {
+            if ($amenity->category === "INDOOR") {
+                $indoor_ameninites[] = $amenity->amenity;
+            } else if ($amenity->category === "OUTDOOR") {
+                $outdoor_amenities[] = $amenity->amenity;
+            } else if ($amenity->category === "EXTRAS") {
+                $extras_amenities[] = $amenity->amenity;
+            } else if ($amenity->category === "FAMILY") {
+                $family_amenities[] = $amenity->amenity;
+            }
+        }
+    }
+} else {
+    echo '<p>Property not found.</p>';
+}
+if ($row) {
+?>
+
+    <div id="espl-single-page-wrapper" class="espl-single-page-wrapper">
+        <div class="espl-single-page-header">
+            <h1 style="text-transform: uppercase;" class="espl-single-page-section-heading"><?php echo esc_html($row->post_title); ?></h1>
+            <div class="espl-single-page-images-grid">
+                <?php
+                $images_counter = 0;
+                foreach ($images as $k => $image) {
+                    if ($images_counter === 6) {
+                        break;
+                    }
+                ?>
+                    <div onclick="openSliderModal(<?php echo $k ?>)" class="image <?php echo $k == 4 || $k === 5 ? 'grid-col-span-2' : '' ?>"><img src="<?php echo $image['url'] ?>" alt="<?php echo $image['des'] ?>"></div>
+                <?php
+                    $images_counter++;
+                } ?>
+            </div>
+            <a href="#espl-payment-widget-section" class="espl-show-payment-widget-btn">Check Availability</a>
+        </div>
+        <div class="espl-single-page-main">
+            <div class="espl-single-page-property-key-feature">
+                <h1 class="espl-single-page-section-heading">Key Features</h1>
+                <div class="espl-property-key-feature-grid">
+                    <div class="espl-property-key-feature-grid-item">
+                        <div class="espl-property-feature-icon-wrapper">
+                            <div>
+                                <span class="espl-property-page-icon-size">
+                                    <i aria-hidden="true" class="fas fa-people-arrows"></i>
+                                </span>
+                            </div>
+                            <p>max <?php echo $row->espl_property_max_guests ?> guests</p>
+                        </div>
+                    </div>
+                    <div class="espl-property-key-feature-grid-item">
+                        <div class="espl-property-feature-icon-wrapper">
+                            <div>
+                                <span class="espl-property-page-icon-size">
+                                    <i aria-hidden="true" class="fas fa-shower"></i> </span>
+                                </span>
+                            </div>
+                            <p><?php echo $row->espl_property_bathrooms ?> x bathroom </p>
+                        </div>
+                    </div>
+                    <div class="espl-property-key-feature-grid-item">
+                        <div class="espl-property-feature-icon-wrapper">
+                            <div>
+                                <span class="espl-property-page-icon-size">
+                                    <i aria-hidden="true" class="fas fa-bed"></i>
+                                </span>
+                            </div>
+                            <p><?php echo $row->espl_property_bedrooms ?> x bedrooms </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="espl-single-page-info-payment-wrapper">
+                <div class="espl-single-page-info-wrapper">
+                    <h1 class="espl-single-page-section-heading">About the Property</h1>
+                    <div style="display: none;" class="espl-property-main-content-hidden">
+                        <?php echo esc_html($row->post_content); ?>
+                    </div>
+                    <div class="espl-property-main-content truncated">
+                    </div>
+                    <a class="espl-content-read-more" href="JavaScript::void()">Read More &gt;&gt;&gt;</a>
+                    <h5>Book Direct with Confidence</h5>
+                    <p class="espl-ipac-text">
+                        We are accredited and verified members of
+                        I-PRAC, the worlds only short term rental verification platform.
+                    </p>
+                    <div class="iprac-certified-image" align="center">
+                        <img src="https://effectivestays.co.uk/wp-content/uploads/2022/11/I-PRAC-Approved-Logo-1.png" />
+                    </div>
+                    <div class="espl-single-page-reviews-wrapper">
+                        <?php
+                        if ($review_shortcode) {
+                            echo '<div>' . do_shortcode($review_shortcode) . '</div>';
+                        }
+                        ?>
+                    </div>
+                </div>
+                <div id="espl-payment-widget-section" class="espl-single-page-payment-widget-wrapper">
+                    <div>
+                        <div id="espl-widget-div" class="espl-widget-div">
+                            <div id="leadWidget"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="espl-single-page-amenities">
+                <h1 class="espl-single-page-section-heading">Amenities</h1>
+                <div class="espl-single-amenity-categories">
+                    <?php if (count($indoor_ameninites) > 0) { ?>
+                        <div class="espl-single-amenity-category">
+                            <h5 class="espl-single-page-amenity-heading">Indoor</h5>
+                            <div class="espl-amenities-category">
+                                <?php foreach ($indoor_ameninites as $k => $item) { ?>
+                                    <!-- <div class="espl-amenity-item"> -->
+                                    <h6 class="<?php echo $k > 4 ? 'espl-more-category espl-hidden-category' : '';  ?>"><?php echo $base->trimAmenityText($item); ?></h6>
+                                    <!-- </div> -->
+                                <?php } ?>
+                            </div>
+
+                            <?php if (count($indoor_ameninites) > 4) { ?>
+                                <button type="button" class="espl-load-more-category">See More</button>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                    <?php if (count($outdoor_amenities) > 0) { ?>
+                        <div class="espl-single-amenity-category">
+                            <h5 class="espl-single-page-amenity-heading">Outdoor</h5>
+                            <div class="espl-amenities-category">
+                                <?php foreach ($outdoor_amenities as $k => $item) { ?>
+                                    <!-- <div class="espl-amenity-item"> -->
+                                    <h6 class="<?php echo $k > 4 ? 'espl-more-category espl-hidden-category' : '';  ?>"><?php echo $base->trimAmenityText($item); ?></h6>
+                                    <!-- </div> -->
+                                <?php } ?>
+                            </div>
+                            <?php if (count($outdoor_amenities) > 4) { ?>
+                                <button type="button" class="espl-load-more-category">See More</button>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                    <?php if (count($family_amenities) > 0) { ?>
+                        <div class="espl-single-amenity-category">
+                            <h5 class="espl-single-page-amenity-heading">Family</h5>
+                            <div class="espl-amenities-category">
+                                <?php foreach ($family_amenities as $k => $item) { ?>
+                                    <!-- <div class="espl-amenity-item"> -->
+                                    <h6 class="<?php echo $k > 4 ? 'espl-more-category espl-hidden-category' : '';  ?>"><?php echo $base->trimAmenityText($item); ?></h6>
+                                    <!-- </div> -->
+                                <?php } ?>
+                            </div>
+                            <?php if (count($family_amenities) > 4) { ?>
+                                <button type="button" class="espl-load-more-category">See More</button>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                    <?php if (count($extras_amenities) > 0) { ?>
+                        <div class="espl-single-amenity-category">
+                            <h5 class="espl-single-page-amenity-heading">Extra</h5>
+                            <div class="espl-amenities-category">
+                                <?php foreach ($extras_amenities as $k => $item) { ?>
+                                    <h6 class="<?php echo $k > 4 ? 'espl-more-category espl-hidden-category' : '';  ?>"><?php echo $base->trimAmenityText($item); ?></h6>
+                                    <!-- </div> -->
+                                <?php } ?>
+                            </div>
+                            <?php if (count($extras_amenities) > 4) { ?>
+                                <button type="button" class="espl-load-more-category">See More</button>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                </div>
+            </div>
+            <div class="espl-single-page-location-map-wrapper">
+                <div class="espl-single-page-section-heading">
+                    <h1 class="espl-single-page-section-heading">Location Map</h1>
+                </div>
+                <?php if ($map_shortcode) { ?>
+                    <div class="espl-single-page-location-map">
+                        <?php echo do_shortcode($map_shortcode) ?>
+                    </div>
+                <?php } ?>
+            </div>
+            <?php
+
+            if ($rules = $base->getPolicies($row->ID)) {
+            ?>
+                <div class="espl-single-page-policies">
+                    <div class="espl-single-page-section-heading espl-text-center">
+                        <h1 class="espl-single-page-section-heading">Policies</h1>
+                    </div>
+                    <ul>
+                        <?php
+
+                        foreach ($rules as $rule) {
+                        ?>
+                            <li><?php echo $rule ?></li>
+                        <?php }
+                        ?>
+                        <!-- <li>Pay 10% at the time of booking then the remainder 7 days before check in</li>
+                    <li>Free cancellation upto 7 days before check in</li>
+                    <li>Check in time = 4pm</li>
+                    <li>Check out time = 10am</li>
+                    <li>No pets</li>
+                    <li>No parties or events</li>
+                    <li>Lead guest must provide valid ID for verification before check in</li>
+                    <li>£50 security deposit hold must be placed before check in</li>
+                    <li>Guest T&C’s must be signed before check in</li>
+                    <li>Access codes will be automatically released when ID, security deposit and T&Cs are complete</li>
+                    <li>Security deposits will be cancelled and returned within 7 days of check out</li> -->
+                    </ul>
+                </div>
+            <?php } ?>
+        </div>
+    </div>
+
+    <div id="espl-images-slider-modal" class="espl-modal">
+        <!-- Modal content -->
+        <div class="espl-modal-content">
+            <span class="espl-close">&times;</span>
+            <div class="espl-property-images-slider-thumbnails">
+                <?php foreach ($images as $k => $image) { ?>
+                    <img onclick="selectImage(<?php echo $k; ?>)" class="espl-slider-thumbnail-image" src="<?php echo $image["url"]; ?>">
+                <? } ?>
+            </div>
+            <div class="espl-property-images-slider-wrapper">
+                <span class="espl-slide-image-left"><i class="fa-solid fa fa-angle-left"></i></span>
+                <div class="espl-slider-image-view">
+                    <img class="espl-slider-image" src="<?php echo $images[0]["url"]; ?>">
+                </div>
+                <span class="espl-slide-image-right"><i class="fa-solid fa fa-angle-right"></i></span>
+            </div>
+        </div>
+    </div>
+    <?php
+    $three_years_time = 60 * 60 * 24 * 365 * 3;
+    $three_years_ahead = $three_years_time + time();
+
+    // Create a DateTime object from the timestamp
+    $date = new DateTime("@$three_years_ahead");
+
+    // Format the DateTime object using the desired format
+    $formatted_date = $date->format('Y-m-d\TH:i:s.u\Z');
+    ?>
+
+    <script type="text/javascript" src="https://platform.hostfully.com/assets/js/pikaday.js"></script>
+
+    <script type="text/javascript" src="https://platform.hostfully.com/assets/js/leadCaptureWidget_2.0.js"></script>
+
+
+    <script>
+        var widget = new Widget('leadWidget', '<?php echo $row->espl_property_uid; ?>', {
+            "maximun_availability": "<?php echo $formatted_date; ?>",
+            "type": "agency",
+            "fields": ["phone"],
+            "showAvailability": true,
+            "lang": "US",
+            "minStay": true,
+            "price": true,
+            "hidePriceWithoutDates": false,
+            "cc": false,
+            "emailClient": true,
+            "saveCookie": true,
+            "showDynamicMinStay": true,
+            "backgroundColor": "#FFFFFF",
+            "buttonSubmit": {
+                "backgroundColor": "#c69b71"
+            },
+            "showPriceDetailsLink": true,
+            "showGetQuoteLink": false,
+            "labelColor": "#000000",
+            "showTotalWithoutSD": true,
+            "redirectURL": false,
+            "showDiscount": true,
+            "includeReferrerToRequest": true,
+            "customDomainName": null,
+            "source": null,
+            "aid": "ORB-49587220416635719",
+            "clickID": null,
+            "valuesByDefaults": {
+                "checkIn": {
+                    "value": ""
+                },
+                "checkOut": {
+                    "value": ""
+                },
+                "guests": {
+                    "value": ""
+                },
+                "discountCode": {
+                    "value": ""
+                }
+            },
+            "pathRoot": "https://platform.hostfully.com/"
+        });
+
+        let infoWrapper = document.querySelector(".espl-single-page-info-payment-wrapper");
+        let widgetDiv = document.querySelector(".espl-widget-div");
+        let featureWrapper = document.querySelector(".espl-single-page-property-key-feature");
+        let galleryContainer = document.querySelector(".espl-single-page-images-grid");
+        let lastScrollTop =
+            window.scrollY || document.documentElement.scrollTop;
+        window.addEventListener(
+            'scroll',
+            function() {
+                if (isMobile()) {
+                    handleAvailabilityBtnForMobile()
+                    return
+                }
+                let res = isVisible(infoWrapper);
+                handlePaymentWidgetPosition(res)
+                return
+            }, false)
+        const pageContainer = document.getElementById("qodef-page-inner")
+        let widgetWidth = 525;
+        if (pageContainer && pageContainer.offsetWidth) {
+            widgetWidth = (pageContainer.offsetWidth - 50) / 2
+        }
+        if (!isMobile()) {
+            widgetDiv.style.width = widgetWidth + "px";
+        }
+
+        function handlePaymentWidgetPosition(visible = true) {
+            const scrollTopPosition =
+                window.scrollY || document.documentElement.scrollTop;
+            if (pageContainer && pageContainer.offsetWidth) {
+                widgetWidth = (pageContainer.offsetWidth - 50) / 2
+            }
+            if (scrollTopPosition > lastScrollTop) {
+                // console.log('scrolling down');
+                if (visible) {
+                    widgetDiv.style.width = widgetWidth + "px";
+                    widgetDiv.classList.add("espl-widget-div-on-fixed");
+                    widgetDiv.style.top = "unset";
+                    widgetDiv.style.bottom = "20px";
+                } else {
+                    widgetDiv.classList.remove("espl-widget-div-on-fixed");
+                }
+            } else if (scrollTopPosition < lastScrollTop) {
+                // console.log('scrolling up');
+                if (visible) {
+                    widgetDiv.classList.add("espl-widget-div-on-fixed");
+                } else {
+                    let isFeatureVisible = featureVisible(featureWrapper);
+                    if (isFeatureVisible) {
+                        widgetDiv.classList.remove("espl-widget-div-on-fixed");
+                        widgetDiv.style.top = "0px";
+                        widgetDiv.style.bottom = "unset";
+                    }
+                }
+            }
+            lastScrollTop =
+                scrollTopPosition <= 0 ? 0 : scrollTopPosition;
+        }
+        let checkAvailabilityBtn = document.querySelector(".espl-show-payment-widget-btn")
+
+        function handleAvailabilityBtnForMobile() {
+            const scrollTopPosition =
+                window.scrollY || document.documentElement.scrollTop;
+            let isFeatureVisible = featureVisible(featureWrapper);
+            if (scrollTopPosition > lastScrollTop) {
+                // console.log('scrolling down');
+                if (isFeatureVisible) {
+                    checkAvailabilityBtn.style.position = "fixed"
+                }
+
+            } else if (scrollTopPosition < lastScrollTop) {
+                // console.log('scrolling up');
+                if (isFeatureVisible) {
+                    checkAvailabilityBtn.style.position = "relative"
+                }
+
+            }
+            lastScrollTop =
+                scrollTopPosition <= 0 ? 0 : scrollTopPosition;
+        }
+
+
+        function isVisible(ele) {
+            // Source: https://gist.github.com/jjmu15/8646226
+            const {
+                top,
+                bottom
+            } = ele.getBoundingClientRect();
+
+            const vHeight = (window.innerHeight || document.documentElement.clientHeight);
+            return (
+                (top > 0 || bottom > 0) &&
+                ((top * 2) < vHeight && bottom > vHeight)
+            );
+        }
+
+        function featureVisible(ele) {
+            // Source: https://gist.github.com/jjmu15/8646226
+            const {
+                top,
+                bottom
+            } = ele.getBoundingClientRect();
+
+            const vHeight = (window.innerHeight || document.documentElement.clientHeight);
+            return (
+                (top > 0 || bottom > 0) &&
+                (top < vHeight && (bottom * 2 + 30) > vHeight)
+            );
+        }
+
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        var modal = document.querySelector("#espl-images-slider-modal");
+        // Get the <span> element that closes the modal
+        var span = document.querySelector(".espl-close");
+        // When the user clicks the button, open the modal 
+        let imagePosition = 0
+        let openSliderModal = function(index) {
+            imagePosition = index
+            imageElem.src = imagesList[imagePosition].url
+            modal.style.display = "block";
+        }
+        let selectImage = function(index) {
+            imagePosition = index
+            imageElem.src = imagesList[imagePosition].url
+        }
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+            modal.style.display = "none";
+        }
+        let imagesList = <?php echo json_encode($images) ?>;
+        let slideLeftBtn = document.querySelector(".espl-slide-image-left")
+        let slideRightBtn = document.querySelector(".espl-slide-image-right")
+        let imageElem = document.querySelector(".espl-slider-image")
+        slideRightBtn.onclick = function() {
+            if (!imagesList[imagePosition + 1]) {
+                return
+            }
+            imagePosition++
+            imageElem.src = imagesList[imagePosition].url
+        }
+        slideLeftBtn.onclick = function() {
+            if (!imagesList[imagePosition - 1]) {
+                return
+            }
+            imagePosition--
+            imageElem.src = imagesList[imagePosition].url
+        }
+
+        let content_read_more_btn = document.querySelector(".espl-content-read-more");
+        let content_wrapper = document.querySelector(".espl-property-main-content");
+        let content_wrapper_hidden = document.querySelector(".espl-property-main-content-hidden");
+        let amenities_wrapper = document.querySelector(".espl-single-page-amenities");
+        let main_text_content = content_wrapper_hidden.textContent;
+        let text_content_length = main_text_content.length;
+        let full_content = true;
+        let text_split = main_text_content.split("\n")
+        let content_html = '';
+        let paragraphs = 0;
+        let paragraph_mobile_style = ``
+        if (isMobile()) {
+            paragraph_mobile_style = `style="font-size:17px !important"`
+        }
+        text_split.forEach(function(row) {
+            if (row.trim().length !== 0) {
+                // if (paragraphs > 0)
+                //     return;
+                // content_html += `<p class="mobile-p-font-size">${row}</p>`
+                content_html += `<p ${paragraph_mobile_style}>${row}</p>`
+                paragraphs++;
+            }
+        })
+        content_wrapper.innerHTML = content_html
+        if (paragraphs > 1) {
+            content_read_more_btn.style.display = "block"
+        }
+        content_read_more_btn.addEventListener("click", function(e) {
+            e.preventDefault();
+            if (content_wrapper.classList.contains("truncated")) {
+                content_wrapper.classList.remove("truncated")
+                content_read_more_btn.innerHTML = "&lt;&lt Read Less"
+            } else {
+                content_wrapper.classList.add("truncated")
+                infoWrapper.scrollIntoView({
+                    behavior: "smooth"
+                });
+                content_read_more_btn.innerHTML = "Read More &gt;&gt;&gt;"
+                // window.scrollTo({
+                //     top: top, //1500,
+                //     // left: main_info_wrapper.clientWidth / 2,
+                //     behavior: "smooth"
+                // })
+            }
+        });
+
+
+
+        jQuery(document).ready(function($) {
+            $(document).on("click", ".espl-load-more-category", function(e) {
+                console.log("See More Button Clicked")
+                console.log($(this).parent(0).children('div').eq(0));
+                $(this).parent(0).children('div').eq(0).children('h6.espl-more-category').toggleClass('espl-hidden-category')
+                if ($(this).text() === "See More") {
+                    $(this).text("See Less")
+                } else if ($(this).text() === "See Less") {
+                    $(this).text("See More")
+                    amenities_wrapper.scrollIntoView({
+                        behavior: "smooth"
+                    });
+                }
+            })
+        })
+    </script>
+<?php
+}
+get_footer();
